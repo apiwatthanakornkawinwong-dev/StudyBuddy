@@ -131,42 +131,28 @@
 <div id="app"></div>
 
 <script>
-// --- Data Initializer (Mock Data mimicking database.sql) ---
+// --- Data Initializer (Starts 100% Empty) ---
 function initStorage() {
+    // Clear old demo data if it exists from previous version
+    if (!localStorage.getItem('v3_clean_empty')) {
+        localStorage.removeItem('subjects');
+        localStorage.removeItem('tasks');
+        localStorage.setItem('v3_clean_empty', 'true');
+    }
+
     if (!localStorage.getItem('user')) {
-        localStorage.setItem('user', JSON.stringify({ id: 1, name: 'นิสิตตัวอย่าง', email: 'demo@swu.ac.th' }));
+        localStorage.setItem('user', JSON.stringify({ id: 1, name: 'ผู้ใช้งาน', email: 'user@example.com' }));
     }
     if (!localStorage.getItem('subjects')) {
-        const defaultSubjects = [
-            { id: 1, code: 'ET361', name: 'การพัฒนาโครงงานคอมพิวเตอร์เพื่อการศึกษา', color: '#2F5D50' },
-            { id: 2, code: 'ET342', name: 'การออกแบบสื่อปฏิสัมพันธ์', color: '#7A5C99' },
-            { id: 3, code: 'ET315', name: 'สถิติเพื่อการวิจัยทางการศึกษา', color: '#3E6A8A' },
-            { id: 4, code: 'SWU141', name: 'ภาษาอังกฤษเพื่อการสื่อสาร', color: '#9A7B1F' },
-            { id: 5, code: 'ET327', name: 'การผลิตสื่อวิดีโอ', color: '#8A4B5C' }
-        ];
-        localStorage.setItem('subjects', JSON.stringify(defaultSubjects));
+        localStorage.setItem('subjects', JSON.stringify([]));
     }
     if (!localStorage.getItem('tasks')) {
-        const today = new Date();
-        const addDays = (d, days) => { const res = new Date(d); res.setDate(res.getDate() + days); return res.toISOString().slice(0, 10); };
-        
-        const defaultTasks = [
-            { id: 1, subject_id: 1, title: 'ส่งเค้าโครงโครงงานฉบับแก้ไข', type: 'group', due_date: addDays(today, 2) + 'T23:59', level: 3, important: 1, status: 'doing', note: '' },
-            { id: 2, subject_id: 1, title: 'ทำ Wireframe หน้าหลักของแอป', type: 'group', due_date: addDays(today, 9) + 'T23:59', level: 2, important: 1, status: 'todo', note: '' },
-            { id: 3, subject_id: 2, title: 'ต้นแบบสื่อปฏิสัมพันธ์ (Figma)', type: 'solo', due_date: addDays(today, 3) + 'T09:00', level: 3, important: 1, status: 'todo', note: '' },
-            { id: 4, subject_id: 3, title: 'แบบฝึกหัดบทที่ 4 การทดสอบที', type: 'solo', due_date: addDays(today, 2) + 'T12:00', level: 2, important: 0, status: 'todo', note: '' },
-            { id: 5, subject_id: 4, title: 'Presentation หัวข้อ My hometown', type: 'solo', due_date: addDays(today, 6) + 'T13:00', level: 1, important: 1, status: 'todo', note: '' },
-            { id: 6, subject_id: 5, title: 'ถ่ายทำคลิปสั้นงานกลุ่ม', type: 'group', due_date: addDays(today, 3) + 'T23:59', level: 3, important: 1, status: 'todo', note: '' },
-            { id: 7, subject_id: 3, title: 'สรุปบทความวิจัย 1 เรื่อง', type: 'solo', due_date: addDays(today, 12) + 'T23:59', level: 2, important: 0, status: 'todo', note: '' },
-            { id: 8, subject_id: 4, title: 'Vocabulary quiz 3', type: 'solo', due_date: addDays(today, -1) + 'T10:00', level: 1, important: 0, status: 'todo', note: '' },
-            { id: 9, subject_id: 2, title: 'อ่านบทที่ 2 และตอบคำถามท้ายบท', type: 'solo', due_date: addDays(today, -3) + 'T23:59', level: 1, important: 0, status: 'done', note: '' }
-        ];
-        localStorage.setItem('tasks', JSON.stringify(defaultTasks));
+        localStorage.setItem('tasks', JSON.stringify([]));
     }
 }
 initStorage();
 
-// --- Helpers & Logic matching db.php ---
+// --- Helpers ---
 const thaiMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const fullThaiMonths = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
@@ -175,6 +161,7 @@ function getTasks() { return JSON.parse(localStorage.getItem('tasks') || '[]'); 
 function getUser() { return JSON.parse(localStorage.getItem('user') || 'null'); }
 
 function thaiDate(dateStr, showTime = false) {
+    if (!dateStr) return '';
     const d = new Date(dateStr);
     let text = `${d.getDate()} ${thaiMonths[d.getMonth() + 1]} ${d.getFullYear() + 543}`;
     if (showTime) {
@@ -232,7 +219,7 @@ function enrichTask(t) {
     };
 }
 
-// --- App Router & Views ---
+// --- App Navigation ---
 let currentView = 'dashboard';
 let calendarMonth = new Date().toISOString().slice(0, 7);
 let editTaskId = null;
@@ -262,7 +249,7 @@ function deleteTask(id) {
     }
 }
 
-// --- Component Renderers ---
+// --- Views ---
 function renderHeader() {
     const user = getUser();
     return `
@@ -319,6 +306,7 @@ function renderTaskItem(t) {
 
 function renderDashboard() {
     const user = getUser();
+    const subjects = getSubjects();
     const tasks = getTasks().map(enrichTask);
     const activeTasks = tasks.filter(t => t.status !== 'done').sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
     const doneCount = tasks.filter(t => t.status === 'done').length;
@@ -337,11 +325,13 @@ function renderDashboard() {
     }
 
     activeTasks.forEach(t => {
-        const dStr = t.due_date.slice(0, 10);
-        const target = daysArr.find(x => x.date === dStr);
-        if (target) {
-            target.tasks.push(t);
-            target.total += parseInt(t.level);
+        if (t.due_date) {
+            const dStr = t.due_date.slice(0, 10);
+            const target = daysArr.find(x => x.date === dStr);
+            if (target) {
+                target.tasks.push(t);
+                target.total += parseInt(t.level);
+            }
         }
     });
 
@@ -367,6 +357,13 @@ function renderDashboard() {
     <h1>สวัสดี ${user.name}</h1>
     <p class="lead" style="margin-bottom:20px;">มีงานค้าง <b>${activeTasks.length} ชิ้น</b> ควรเริ่มทำตอนนี้ <b>${startNow.length} ชิ้น</b> <span class="muted">(ทำเสร็จแล้ว ${doneCount} ชิ้น)</span></p>
 
+    ${subjects.length === 0 ? `
+        <div class="alert" style="background:#FFF2CC; color:#8C6B00; border:1px solid #FFE699; margin-bottom:20px;">
+            📌 <b>ยินดีต้อนรับ!</b> เริ่มต้นใช้งานโดยไปที่หน้า <b>"รายวิชา"</b> เพื่อเพิ่มวิชาเรียนของคุณก่อน
+            <button onclick="navigate('subjects')" class="btn btn-sm btn-main" style="margin-left:10px;">+ เพิ่มวิชาใหม่</button>
+        </div>
+    ` : ''}
+
     <div class="box">
         <h2>ภาระงาน 14 วันข้างหน้า</h2>
         <p class="muted small">ความสูงของแท่ง = ความยากรวมของงานที่ส่งวันนั้น ${clashCount > 0 ? `<br><b class="warn">มี ${clashCount} วันที่งานส่งชนกัน ควรเริ่มทำล่วงหน้า</b>` : ''}</p>
@@ -389,7 +386,7 @@ function renderDashboard() {
         <div class="box">
             <h2>ควรลงมือวันนี้</h2>
             <p class="muted small" style="margin-bottom:10px;">งานยากควรเริ่มก่อนส่ง 5 วัน ปานกลาง 3 วัน ง่าย 1 วัน</p>
-            ${startNow.length === 0 ? '<p class="muted">ยังไม่มีงานที่ต้องเร่ง</p>' : `<ul class="task-list">${startNow.map(renderTaskItem).join('')}</ul>`}
+            ${startNow.length === 0 ? '<p class="muted">ยังไม่มีงานที่ต้องเร่งทำ</p>' : `<ul class="task-list">${startNow.map(renderTaskItem).join('')}</ul>`}
         </div>
         <div class="box">
             <h2>จัดลำดับความสำคัญ</h2>
@@ -447,13 +444,25 @@ function renderTasksView() {
                 <option value="done" ${statusFilter === 'done' ? 'selected' : ''}>เสร็จแล้ว</option>
             </select>
         </div>
-        ${filtered.length === 0 ? '<p class="muted">ไม่พบรายการงาน</p>' : `<ul class="task-list">${filtered.map(renderTaskItem).join('')}</ul>`}
+        ${filtered.length === 0 ? '<p class="muted">ยังไม่มีรายการงานในระบบ</p>' : `<ul class="task-list">${filtered.map(renderTaskItem).join('')}</ul>`}
     </div>`;
 }
 
 function renderTaskForm() {
     const tasks = getTasks();
     const subjects = getSubjects();
+
+    if (subjects.length === 0) {
+        return `
+        <div class="page-top"><h1>เพิ่มงานใหม่</h1></div>
+        <div class="box" style="max-width:600px;">
+            <div class="alert error" style="margin-bottom:20px;">
+                ยังไม่มีรายวิชาในระบบ กรุณาเพิ่มรายวิชาในหน้า <b>"รายวิชา"</b> ก่อนเริ่มเพิ่มงาน
+            </div>
+            <button onclick="navigate('subjects')" class="btn btn-main">+ ไปหน้าจัดการรายวิชา</button>
+        </div>`;
+    }
+
     const task = tasks.find(t => t.id == editTaskId) || { title: '', subject_id: subjects[0]?.id || '', type: 'solo', due_date: '', level: 2, important: 1, status: 'todo', note: '' };
 
     return `
@@ -464,7 +473,7 @@ function renderTaskForm() {
     <div class="box" style="max-width:600px;">
         <form onsubmit="saveTask(event)">
             <label>หัวข้อ/ชื่องาน
-                <input type="text" id="task-title" value="${task.title}" required>
+                <input type="text" id="task-title" value="${task.title}" required placeholder="เช่น รายงานบทที่ 1">
             </label>
             <div class="row">
                 <div>
@@ -519,7 +528,7 @@ function renderTaskForm() {
                 </div>
             </div>
             <label>บันทึกเพิ่มเติม
-                <textarea id="task-note" rows="3">${task.note || ''}</textarea>
+                <textarea id="task-note" rows="3" placeholder="รายละเอียดหรืองานย่อยเพิ่มเติม...">${task.note || ''}</textarea>
             </label>
             <div style="display:flex; gap:10px; margin-top:15px;">
                 <button type="submit" class="btn btn-main" style="flex:1;">บันทึกข้อมูล</button>
@@ -571,7 +580,7 @@ function renderCalendar() {
     // Group tasks by day
     const byDay = {};
     tasks.forEach(t => {
-        if (t.due_date.startsWith(calendarMonth)) {
+        if (t.due_date && t.due_date.startsWith(calendarMonth)) {
             const dayNum = parseInt(t.due_date.slice(8, 10));
             if (!byDay[dayNum]) byDay[dayNum] = [];
             byDay[dayNum].push(t);
@@ -626,6 +635,7 @@ function renderSubjects() {
     <div class="two-col">
         <div class="box">
             <h2>รายวิชาทั้งหมด</h2>
+            ${subjects.length === 0 ? '<p class="muted">ยังไม่มีรายวิชาในระบบ เพิ่มรายวิชาได้จากฟอร์มทางด้านขวา</p>' : `
             <table>
                 <thead>
                     <tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>สีประจำวิชา</th><th>จัดการ</th></tr>
@@ -641,6 +651,7 @@ function renderSubjects() {
                     `).join('')}
                 </tbody>
             </table>
+            `}
         </div>
         <div class="box">
             <h2>เพิ่มวิชาใหม่</h2>
@@ -668,7 +679,7 @@ function saveSubject(e) {
 }
 
 function deleteSubject(id) {
-    if (confirm('ยืนยันการลบวิชานี้?')) {
+    if (confirm('ยืนยันการลบวิชานี้? (งานที่ผูกกับวิชานี้จะไม่ถูกลบ)')) {
         const subjects = getSubjects().filter(s => s.id != id);
         localStorage.setItem('subjects', JSON.stringify(subjects));
         renderApp();
@@ -680,13 +691,14 @@ function renderAuth() {
     <div class="auth-container">
         <div class="auth-box">
             <span class="logo">รวมงาน</span>
-            <p class="muted">ทำโดยนิสิต เพื่อนิสิต (Demo Version)</p>
+            <p class="muted">ระบบบริหารจัดการงานในชั้นเรียน</p>
             <h1 style="margin-top:15px;">เข้าสู่ระบบ</h1>
-            <p class="muted" style="margin-bottom:20px;">เข้าสู่ระบบเพื่อดูงานทุกวิชาของคุณ</p>
+            <p class="muted" style="margin-bottom:20px;">กรอกชื่อผู้ใช้งานเพื่อเริ่มใช้ระบบ</p>
             <form onsubmit="login(event)">
-                <label>อีเมล <input type="email" id="email" value="demo@swu.ac.th" required></label>
-                <label>รหัสผ่าน <input type="password" id="password" value="demo1234" required></label>
-                <button class="btn btn-main btn-full" style="margin-top:10px;">เข้าสู่ระบบ</button>
+                <label>ชื่อผู้ใช้งาน <input type="text" id="user-name" placeholder="ระบุชื่อของคุณ" value="นิสิต" required></label>
+                <label>อีเมล <input type="email" id="email" placeholder="email@example.com" value="user@example.com" required></label>
+                <label>รหัสผ่าน <input type="password" id="password" value="123456" required></label>
+                <button class="btn btn-main btn-full" style="margin-top:10px;">เข้าสู่ระบบ / เริ่มใช้งาน</button>
             </form>
         </div>
         <div class="auth-side">
@@ -697,7 +709,9 @@ function renderAuth() {
 
 function login(e) {
     e.preventDefault();
-    const user = { id: 1, name: 'นิสิตตัวอย่าง', email: document.getElementById('email').value };
+    const nameInput = document.getElementById('user-name').value || 'ผู้ใช้งาน';
+    const emailInput = document.getElementById('email').value || 'user@example.com';
+    const user = { id: 1, name: nameInput, email: emailInput };
     localStorage.setItem('user', JSON.stringify(user));
     renderApp();
 }
