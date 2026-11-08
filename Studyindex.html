@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>รวมงาน - ระบบบริหารจัดการงานในชั้นเรียน</title>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F9F8F3;
+            --box-bg: #FFFFFF;
+            --text: #2C3639;
+            --muted: #6C757D;
+            --border: #E0DDD5;
+            --main: #2F5D50;
+            --main-hover: #24493F;
+            --danger: #A73232;
+            --warn: #C87D55;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Anuphan', sans-serif; }
+        body { background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; }
+        a { color: var(--main); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Auth Page */
+        .auth-container { display: flex; min-height: 100vh; }
+        .auth-box { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px; max-width: 450px; margin: 0 auto; }
+        .auth-side { flex: 1; background: var(--main); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 700; padding: 40px; }
+        @media (max-width: 768px) { .auth-side { display: none; } }
+
+        /* App Layout */
+        .layout { display: flex; min-height: 100vh; }
+        .sidebar { width: 240px; background: var(--box-bg); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .main { flex: 1; padding: 30px; max-width: 1200px; }
+        .topbar { display: none; background: var(--box-bg); padding: 15px 20px; border-bottom: 1px solid var(--border); justify-content: space-between; align-items: center; }
+        @media (max-width: 768px) {
+            .layout { flex-direction: column; }
+            .sidebar { display: none; width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+            .sidebar.active { display: flex; }
+            .topbar { display: flex; }
+            .main { padding: 20px 15px; }
+        }
+
+        /* Elements */
+        .logo { font-size: 1.6rem; font-weight: 700; color: var(--main); text-decoration: none; display: block; margin-bottom: 10px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 6px; background: #E9E6DD; color: var(--text); border: none; font-weight: 600; cursor: pointer; text-decoration: none !important; font-size: 0.95rem; }
+        .btn:hover { opacity: 0.9; }
+        .btn-main { background: var(--main); color: #fff; }
+        .btn-sm { padding: 4px 10px; font-size: 0.85rem; }
+        .btn-full { width: 100%; }
+        .btn-danger { background: var(--danger); color: #fff; }
+
+        .menu { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+        .menu a { padding: 10px 12px; border-radius: 6px; color: var(--text); font-weight: 500; }
+        .menu a:hover, .menu a.active { background: var(--bg); color: var(--main); font-weight: 600; }
+
+        .box { background: var(--box-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+        .page-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        h1 { font-size: 1.8rem; margin-bottom: 5px; }
+        h2 { font-size: 1.2rem; margin-bottom: 10px; }
+        .muted { color: var(--muted); }
+        .small { font-size: 0.85rem; }
+        .warn { color: var(--warn); }
+        .alert { padding: 12px; border-radius: 6px; background: #E2F0D9; color: #276A3C; margin-bottom: 15px; }
+        .alert.error { background: #FCE4D6; color: var(--danger); }
+
+        /* Form */
+        form label { display: block; margin-bottom: 15px; font-weight: 500; }
+        form input, form select, form textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
+        form .row { display: flex; gap: 15px; }
+        form .row > div { flex: 1; }
+
+        /* Task List */
+        .task-list { list-style: none; }
+        .task { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-left: 6px solid var(--c, #8C8676); border-radius: 6px; margin-bottom: 8px; background: #fff; }
+        .task.done { opacity: 0.6; background: #F2F1ED; }
+        .task.done .task-title { text-decoration: line-through; }
+        .task.overdue { border-right: 3px solid var(--danger); }
+        .check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--main); }
+        .task-body { flex: 1; text-decoration: none !important; color: inherit; }
+        .task-title { font-weight: 600; display: block; }
+        .task-meta { font-size: 0.85rem; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+        .tag { background: #E9E6DD; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .tag.lv1 { background: #E2F0D9; color: #276A3C; }
+        .tag.lv2 { background: #FFF2CC; color: #8C6B00; }
+        .tag.lv3 { background: #FCE4D6; color: #C87D55; }
+        .tag.doing { background: #D9E1F2; color: #2F5597; }
+        .task-left { text-align: right; font-size: 0.85rem; }
+        .task-left b { display: block; color: var(--main); }
+
+        /* 14-day Load Chart */
+        .load { display: flex; gap: 6px; height: 140px; align-items: flex-end; margin-top: 15px; padding-top: 20px; border-bottom: 1px solid var(--border); }
+        .load .day { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+        .load .bar { width: 100%; background: #E9E6DD; border-radius: 4px 4px 0 0; height: 100px; display: flex; align-items: flex-end; overflow: hidden; }
+        .load .fill { width: 100%; display: flex; flex-direction: column-reverse; }
+        .load .fill span { width: 100%; }
+        .load .day.clash .bar { outline: 2px solid var(--warn); }
+        .load .day.today b { color: var(--main); }
+        .load b { font-size: 0.85rem; margin-top: 4px; }
+        .load small { font-size: 0.7rem; color: var(--muted); }
+
+        /* Matrix */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+        .matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .quad { background: #F9F8F3; padding: 12px; border-radius: 6px; border: 1px solid var(--border); min-height: 120px; }
+        .quad h3 { font-size: 0.9rem; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 8px; }
+        .quad h3 small { font-weight: normal; color: var(--muted); display: block; font-size: 0.75rem; }
+        .quad a { display: block; font-size: 0.85rem; padding: 4px 6px; background: #fff; border-radius: 4px; margin-bottom: 4px; border-left: 4px solid var(--c, #8C8676); color: var(--text); text-decoration: none !important; }
+
+        /* Calendar */
+        .calendar-wrap { overflow-x: auto; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; min-width: 600px; }
+        .cal-head { text-align: center; font-weight: 600; padding: 8px; background: #E9E6DD; border-radius: 4px; }
+        .cal-day { background: #fff; border: 1px solid var(--border); min-height: 90px; padding: 4px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; }
+        .cal-day.empty { background: transparent; border: none; }
+        .cal-day.today { background: #F2F7F4; border-color: var(--main); }
+        .cal-num { font-weight: 600; font-size: 0.85rem; color: var(--text); text-decoration: none !important; margin-bottom: 2px; }
+        .cal-task { font-size: 0.75rem; padding: 2px 4px; border-radius: 3px; background: var(--bg); border-left: 3px solid var(--c, #8C8676); color: var(--text); text-decoration: none !important; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .cal-task.done { opacity: 0.5; text-decoration: line-through !important; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { font-weight: 600; background: #F2F1ED; }
+        .color-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 6px; }
+    </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// --- Data Initializer (Mock Data mimicking database.sql) ---
+function initStorage() {
+    if (!localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify({ id: 1, name: 'นิสิตตัวอย่าง', email: 'demo@swu.ac.th' }));
+    }
+    if (!localStorage.getItem('subjects')) {
+        const defaultSubjects = [
+            { id: 1, code: 'ET361', name: 'การพัฒนาโครงงานคอมพิวเตอร์เพื่อการศึกษา', color: '#2F5D50' },
+            { id: 2, code: 'ET342', name: 'การออกแบบสื่อปฏิสัมพันธ์', color: '#7A5C99' },
+            { id: 3, code: 'ET315', name: 'สถิติเพื่อการวิจัยทางการศึกษา', color: '#3E6A8A' },
+            { id: 4, code: 'SWU141', name: 'ภาษาอังกฤษเพื่อการสื่อสาร', color: '#9A7B1F' },
+            { id: 5, code: 'ET327', name: 'การผลิตสื่อวิดีโอ', color: '#8A4B5C' }
+        ];
+        localStorage.setItem('subjects', JSON.stringify(defaultSubjects));
+    }
+    if (!localStorage.getItem('tasks')) {
+        const today = new Date();
+        const addDays = (d, days) => { const res = new Date(d); res.setDate(res.getDate() + days); return res.toISOString().slice(0, 10); };
+        
+        const defaultTasks = [
+            { id: 1, subject_id: 1, title: 'ส่งเค้าโครงโครงงานฉบับแก้ไข', type: 'group', due_date: addDays(today, 2) + 'T23:59', level: 3, important: 1, status: 'doing', note: '' },
+            { id: 2, subject_id: 1, title: 'ทำ Wireframe หน้าหลักของแอป', type: 'group', due_date: addDays(today, 9) + 'T23:59', level: 2, important: 1, status: 'todo', note: '' },
+            { id: 3, subject_id: 2, title: 'ต้นแบบสื่อปฏิสัมพันธ์ (Figma)', type: 'solo', due_date: addDays(today, 3) + 'T09:00', level: 3, important: 1, status: 'todo', note: '' },
+            { id: 4, subject_id: 3, title: 'แบบฝึกหัดบทที่ 4 การทดสอบที', type: 'solo', due_date: addDays(today, 2) + 'T12:00', level: 2, important: 0, status: 'todo', note: '' },
+            { id: 5, subject_id: 4, title: 'Presentation หัวข้อ My hometown', type: 'solo', due_date: addDays(today, 6) + 'T13:00', level: 1, important: 1, status: 'todo', note: '' },
+            { id: 6, subject_id: 5, title: 'ถ่ายทำคลิปสั้นงานกลุ่ม', type: 'group', due_date: addDays(today, 3) + 'T23:59', level: 3, important: 1, status: 'todo', note: '' },
+            { id: 7, subject_id: 3, title: 'สรุปบทความวิจัย 1 เรื่อง', type: 'solo', due_date: addDays(today, 12) + 'T23:59', level: 2, important: 0, status: 'todo', note: '' },
+            { id: 8, subject_id: 4, title: 'Vocabulary quiz 3', type: 'solo', due_date: addDays(today, -1) + 'T10:00', level: 1, important: 0, status: 'todo', note: '' },
+            { id: 9, subject_id: 2, title: 'อ่านบทที่ 2 และตอบคำถามท้ายบท', type: 'solo', due_date: addDays(today, -3) + 'T23:59', level: 1, important: 0, status: 'done', note: '' }
+        ];
+        localStorage.setItem('tasks', JSON.stringify(defaultTasks));
+    }
+}
+initStorage();
+
+// --- Helpers & Logic matching db.php ---
+const thaiMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const fullThaiMonths = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+function getSubjects() { return JSON.parse(localStorage.getItem('subjects') || '[]'); }
+function getTasks() { return JSON.parse(localStorage.getItem('tasks') || '[]'); }
+function getUser() { return JSON.parse(localStorage.getItem('user') || 'null'); }
+
+function thaiDate(dateStr, showTime = false) {
+    const d = new Date(dateStr);
+    let text = `${d.getDate()} ${thaiMonths[d.getMonth() + 1]} ${d.getFullYear() + 543}`;
+    if (showTime) {
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        text += ` ${hh}:${mm} น.`;
+    }
+    return text;
+}
+
+function daysLeft(dueDateStr) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const due = new Date(dueDateStr);
+    due.setHours(0,0,0,0);
+    return Math.round((due - today) / (1000 * 60 * 60 * 24));
+}
+
+function leadDays(level) {
+    if (parseInt(level) === 3) return 5;
+    if (parseInt(level) === 2) return 3;
+    return 1;
+}
+
+function enrichTask(t) {
+    const subjects = getSubjects();
+    const subj = subjects.find(s => s.id == t.subject_id) || {};
+    const days = daysLeft(t.due_date);
+    
+    let leftText = '';
+    if (days < 0) leftText = `เลยกำหนด ${Math.abs(days)} วัน`;
+    else if (days === 0) leftText = 'ส่งวันนี้';
+    else if (days === 1) leftText = 'ส่งพรุ่งนี้';
+    else leftText = `อีก ${days} วัน`;
+
+    const lDays = leadDays(t.level);
+    const startDate = new Date(t.due_date);
+    startDate.setDate(startDate.getDate() - lDays);
+
+    const urgent = days <= 3;
+    let quadrant = 4;
+    if (t.important && urgent) quadrant = 1;
+    else if (t.important && !urgent) quadrant = 2;
+    else if (!t.important && urgent) quadrant = 3;
+
+    return {
+        ...t,
+        code: subj.code || 'ไม่ระบุวิชา',
+        color: subj.color || '#8C8676',
+        days: days,
+        left_text: leftText,
+        start_date: startDate.toISOString().slice(0, 10),
+        should_start: (t.status !== 'done' && days <= lDays),
+        quadrant: quadrant
+    };
+}
+
+// --- App Router & Views ---
+let currentView = 'dashboard';
+let calendarMonth = new Date().toISOString().slice(0, 7);
+let editTaskId = null;
+
+function navigate(view, params = {}) {
+    if (view === 'calendar' && params.month) calendarMonth = params.month;
+    if (view === 'task_form') editTaskId = params.id || null;
+    currentView = view;
+    renderApp();
+}
+
+function toggleTaskStatus(id) {
+    const tasks = getTasks();
+    const idx = tasks.findIndex(t => t.id == id);
+    if (idx !== -1) {
+        tasks[idx].status = tasks[idx].status === 'done' ? 'todo' : 'done';
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        renderApp();
+    }
+}
+
+function deleteTask(id) {
+    if (confirm('ยืนยันการลบงานนี้?')) {
+        const tasks = getTasks().filter(t => t.id != id);
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        navigate('tasks');
+    }
+}
+
+// --- Component Renderers ---
+function renderHeader() {
+    const user = getUser();
+    return `
+    <div class="layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="#" onclick="navigate('dashboard')" class="logo">รวมงาน</a>
+            <button onclick="navigate('task_form')" class="btn btn-main">+ เพิ่มงาน</button>
+            <nav class="menu">
+                <a href="#" onclick="navigate('dashboard')" class="${currentView === 'dashboard' ? 'active' : ''}">ภาพรวม</a>
+                <a href="#" onclick="navigate('tasks')" class="${currentView === 'tasks' ? 'active' : ''}">งานทั้งหมด</a>
+                <a href="#" onclick="navigate('calendar')" class="${currentView === 'calendar' ? 'active' : ''}">ปฏิทิน</a>
+                <a href="#" onclick="navigate('subjects')" class="${currentView === 'subjects' ? 'active' : ''}">รายวิชา</a>
+            </nav>
+            <div style="margin-top:auto; font-size:0.9rem;">
+                <b>${user ? user.name : ''}</b><br>
+                <a href="#" onclick="logout()" class="muted">ออกจากระบบ</a>
+            </div>
+        </aside>
+        <div class="main">
+            <div class="topbar">
+                <button class="btn btn-sm" onclick="document.getElementById('sidebar').classList.toggle('active')">เมนู</button>
+                <span class="logo" style="margin:0">รวมงาน</span>
+                <button onclick="navigate('task_form')" class="btn btn-main btn-sm">+ เพิ่มงาน</button>
+            </div>
+            <div id="content"></div>
+        </div>
+    </div>`;
+}
+
+function renderTaskItem(t) {
+    const levels = { 1: 'ง่าย', 2: 'ปานกลาง', 3: 'ยาก' };
+    let cls = 'task';
+    if (t.status === 'done') cls += ' done';
+    else if (t.days < 0) cls += ' overdue';
+
+    return `
+    <li class="${cls}" style="--c: ${t.color}">
+        <button class="check" onclick="toggleTaskStatus(${t.id})" title="ทำเครื่องหมายว่าเสร็จ">${t.status === 'done' ? '✓' : ''}</button>
+        <a class="task-body" href="#" onclick="navigate('task_form', {id: ${t.id}})">
+            <span class="task-title">${t.title}</span>
+            <span class="task-meta">
+                <b class="subj">${t.code}</b>
+                ${thaiDate(t.due_date, true)}
+                ${t.type === 'group' ? '<span class="tag">งานกลุ่ม</span>' : ''}
+                <span class="tag lv${t.level}">${levels[t.level]}</span>
+                ${t.status === 'doing' ? '<span class="tag doing">กำลังทำ</span>' : ''}
+            </span>
+        </a>
+        <span class="task-left">
+            ${t.status === 'done' ? 'เสร็จแล้ว' : `<b>${t.left_text}</b><small>${t.should_start ? 'ควรเริ่มแล้ว' : 'เริ่ม ' + thaiDate(t.start_date)}</small>`}
+        </span>
+    </li>`;
+}
+
+function renderDashboard() {
+    const user = getUser();
+    const tasks = getTasks().map(enrichTask);
+    const activeTasks = tasks.filter(t => t.status !== 'done').sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
+    const doneCount = tasks.filter(t => t.status === 'done').length;
+    const startNow = activeTasks.filter(t => t.should_start);
+
+    // 14 Days Load
+    const daysArr = [];
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    for (let i = 0; i < 14; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toISOString().slice(0, 10);
+        daysArr.push({ date: dateStr, dayNum: d.getDate(), dayOfWeek: ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'][d.getDay()], tasks: [], total: 0 });
+    }
+
+    activeTasks.forEach(t => {
+        const dStr = t.due_date.slice(0, 10);
+        const target = daysArr.find(x => x.date === dStr);
+        if (target) {
+            target.tasks.push(t);
+            target.total += parseInt(t.level);
+        }
+    });
+
+    let maxLoad = 6;
+    let clashCount = 0;
+    daysArr.forEach(d => {
+        if (d.total > maxLoad) maxLoad = d.total;
+        if (d.tasks.length >= 2) clashCount++;
+    });
+
+    // Matrix
+    const quads = { 1: [], 2: [], 3: [], 4: [] };
+    activeTasks.forEach(t => quads[t.quadrant].push(t));
+    const quadNames = {
+        1: ['สำคัญ และเร่งด่วน', 'ทำทันที'],
+        2: ['สำคัญ แต่ยังไม่เร่งด่วน', 'วางแผนเวลาทำ'],
+        3: ['เร่งด่วน แต่ไม่สำคัญมาก', 'ทำให้เสร็จเร็ว ๆ'],
+        4: ['ไม่เร่งด่วน ไม่สำคัญมาก', 'ทำเมื่อว่าง']
+    };
+
+    return `
+    <p class="date-line muted">วันนี้ ${thaiDate(new Date().toISOString())}</p>
+    <h1>สวัสดี ${user.name}</h1>
+    <p class="lead" style="margin-bottom:20px;">มีงานค้าง <b>${activeTasks.length} ชิ้น</b> ควรเริ่มทำตอนนี้ <b>${startNow.length} ชิ้น</b> <span class="muted">(ทำเสร็จแล้ว ${doneCount} ชิ้น)</span></p>
+
+    <div class="box">
+        <h2>ภาระงาน 14 วันข้างหน้า</h2>
+        <p class="muted small">ความสูงของแท่ง = ความยากรวมของงานที่ส่งวันนั้น ${clashCount > 0 ? `<br><b class="warn">มี ${clashCount} วันที่งานส่งชนกัน ควรเริ่มทำล่วงหน้า</b>` : ''}</p>
+        <div class="load">
+            ${daysArr.map(d => `
+                <div class="day ${d.tasks.length >= 2 ? 'clash' : ''} ${d.date === today.toISOString().slice(0,10) ? 'today' : ''}">
+                    <div class="bar">
+                        <div class="fill" style="height: ${Math.round(d.total / maxLoad * 100)}%">
+                            ${d.tasks.map(t => `<span style="background: ${t.color}; flex: ${t.level}" title="${t.code} ${t.title}"></span>`).join('')}
+                        </div>
+                    </div>
+                    <b>${d.dayNum}</b>
+                    <small>${d.dayOfWeek}</small>
+                </div>
+            `).join('')}
+        </div>
+    </div>
+
+    <div class="two-col">
+        <div class="box">
+            <h2>ควรลงมือวันนี้</h2>
+            <p class="muted small" style="margin-bottom:10px;">งานยากควรเริ่มก่อนส่ง 5 วัน ปานกลาง 3 วัน ง่าย 1 วัน</p>
+            ${startNow.length === 0 ? '<p class="muted">ยังไม่มีงานที่ต้องเร่ง</p>' : `<ul class="task-list">${startNow.map(renderTaskItem).join('')}</ul>`}
+        </div>
+        <div class="box">
+            <h2>จัดลำดับความสำคัญ</h2>
+            <p class="muted small" style="margin-bottom:10px;">ตาม Time Management Matrix (เร่งด่วน = ส่งภายใน 3 วัน)</p>
+            <div class="matrix">
+                ${[1, 2, 3, 4].map(q => `
+                    <div class="quad">
+                        <h3>${quadNames[q][0]} <small>${quadNames[q][1]}</small></h3>
+                        ${quads[q].length === 0 ? '<p class="muted small">ไม่มีงาน</p>' : quads[q].map(t => `
+                            <a href="#" onclick="navigate('task_form', {id: ${t.id}})" style="--c: ${t.color}">
+                                ${t.title} <small class="muted">${t.left_text}</small>
+                            </a>
+                        `).join('')}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    </div>`;
+}
+
+function renderTasksView() {
+    const tasks = getTasks().map(enrichTask).sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
+    const subjects = getSubjects();
+
+    const subjFilter = document.getElementById('filter-subj')?.value || 'all';
+    const statusFilter = document.getElementById('filter-status')?.value || 'all';
+
+    const filtered = tasks.filter(t => {
+        if (subjFilter !== 'all' && t.subject_id != subjFilter) return false;
+        if (statusFilter === 'active' && t.status === 'done') return false;
+        if (statusFilter === 'done' && t.status !== 'done') return false;
+        return true;
+    });
+
+    return `
+    <div class="page-top">
+        <div>
+            <h1>งานทั้งหมด</h1>
+            <p class="lead muted">รายการงานทุกวิชาของคุณ</p>
+        </div>
+        <div>
+            <button onclick="navigate('task_form')" class="btn btn-main">+ เพิ่มงาน</button>
+        </div>
+    </div>
+
+    <div class="box">
+        <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+            <select id="filter-subj" onchange="renderApp()" style="width:auto; padding:6px 12px;">
+                <option value="all">ทุกวิชา</option>
+                ${subjects.map(s => `<option value="${s.id}" ${subjFilter == s.id ? 'selected' : ''}>${s.code} - ${s.name}</option>`).join('')}
+            </select>
+            <select id="filter-status" onchange="renderApp()" style="width:auto; padding:6px 12px;">
+                <option value="all" ${statusFilter === 'all' ? 'selected' : ''}>ทุกสถานะ</option>
+                <option value="active" ${statusFilter === 'active' ? 'selected' : ''}>ยังไม่เสร็จ</option>
+                <option value="done" ${statusFilter === 'done' ? 'selected' : ''}>เสร็จแล้ว</option>
+            </select>
+        </div>
+        ${filtered.length === 0 ? '<p class="muted">ไม่พบรายการงาน</p>' : `<ul class="task-list">${filtered.map(renderTaskItem).join('')}</ul>`}
+    </div>`;
+}
+
+function renderTaskForm() {
+    const tasks = getTasks();
+    const subjects = getSubjects();
+    const task = tasks.find(t => t.id == editTaskId) || { title: '', subject_id: subjects[0]?.id || '', type: 'solo', due_date: '', level: 2, important: 1, status: 'todo', note: '' };
+
+    return `
+    <div class="page-top">
+        <h1>${editTaskId ? 'แก้ไขงาน' : 'เพิ่มงานใหม่'}</h1>
+    </div>
+
+    <div class="box" style="max-width:600px;">
+        <form onsubmit="saveTask(event)">
+            <label>หัวข้อ/ชื่องาน
+                <input type="text" id="task-title" value="${task.title}" required>
+            </label>
+            <div class="row">
+                <div>
+                    <label>รายวิชา
+                        <select id="task-subject">
+                            ${subjects.map(s => `<option value="${s.id}" ${task.subject_id == s.id ? 'selected' : ''}>${s.code} - ${s.name}</option>`).join('')}
+                        </select>
+                    </label>
+                </div>
+                <div>
+                    <label>ประเภทงาน
+                        <select id="task-type">
+                            <option value="solo" ${task.type === 'solo' ? 'selected' : ''}>งานเดี่ยว</option>
+                            <option value="group" ${task.type === 'group' ? 'selected' : ''}>งานกลุ่ม</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label>กำหนดส่ง
+                        <input type="datetime-local" id="task-due" value="${task.due_date}" required>
+                    </label>
+                </div>
+                <div>
+                    <label>ระดับความยาก
+                        <select id="task-level">
+                            <option value="1" ${task.level == 1 ? 'selected' : ''}>ง่าย (ทำ 1 วัน)</option>
+                            <option value="2" ${task.level == 2 ? 'selected' : ''}>ปานกลาง (ทำ 3 วัน)</option>
+                            <option value="3" ${task.level == 3 ? 'selected' : ''}>ยาก (ทำ 5 วัน)</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label>ความสำคัญ
+                        <select id="task-important">
+                            <option value="1" ${task.important == 1 ? 'selected' : ''}>สำคัญ</option>
+                            <option value="0" ${task.important == 0 ? 'selected' : ''}>ไม่สำคัญมาก</option>
+                        </select>
+                    </label>
+                </div>
+                <div>
+                    <label>สถานะ
+                        <select id="task-status">
+                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>ยังไม่เริ่ม</option>
+                            <option value="doing" ${task.status === 'doing' ? 'selected' : ''}>กำลังทำ</option>
+                            <option value="done" ${task.status === 'done' ? 'selected' : ''}>เสร็จแล้ว</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+            <label>บันทึกเพิ่มเติม
+                <textarea id="task-note" rows="3">${task.note || ''}</textarea>
+            </label>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button type="submit" class="btn btn-main" style="flex:1;">บันทึกข้อมูล</button>
+                ${editTaskId ? `<button type="button" onclick="deleteTask(${editTaskId})" class="btn btn-danger">ลบงาน</button>` : ''}
+                <button type="button" onclick="navigate('tasks')" class="btn">ยกเลิก</button>
+            </div>
+        </form>
+    </div>`;
+}
+
+function saveTask(e) {
+    e.preventDefault();
+    const tasks = getTasks();
+    const taskData = {
+        id: editTaskId ? parseInt(editTaskId) : Date.now(),
+        title: document.getElementById('task-title').value,
+        subject_id: parseInt(document.getElementById('task-subject').value),
+        type: document.getElementById('task-type').value,
+        due_date: document.getElementById('task-due').value,
+        level: parseInt(document.getElementById('task-level').value),
+        important: parseInt(document.getElementById('task-important').value),
+        status: document.getElementById('task-status').value,
+        note: document.getElementById('task-note').value
+    };
+
+    if (editTaskId) {
+        const idx = tasks.findIndex(t => t.id == editTaskId);
+        tasks[idx] = taskData;
+    } else {
+        tasks.push(taskData);
+    }
+
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    navigate('tasks');
+}
+
+function renderCalendar() {
+    const tasks = getTasks().map(enrichTask);
+    const year = parseInt(calendarMonth.split('-')[0]);
+    const month = parseInt(calendarMonth.split('-')[1]);
+
+    const firstDay = new Date(year, month - 1, 1);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startBlank = firstDay.getDay();
+
+    const prevMonth = new Date(year, month - 2, 1).toISOString().slice(0, 7);
+    const nextMonth = new Date(year, month, 1).toISOString().slice(0, 7);
+
+    // Group tasks by day
+    const byDay = {};
+    tasks.forEach(t => {
+        if (t.due_date.startsWith(calendarMonth)) {
+            const dayNum = parseInt(t.due_date.slice(8, 10));
+            if (!byDay[dayNum]) byDay[dayNum] = [];
+            byDay[dayNum].push(t);
+        }
+    });
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    return `
+    <div class="page-top">
+        <div>
+            <h1>${fullThaiMonths[month]} ${year + 543}</h1>
+            <p class="lead muted">กดที่ตัวเลขวันที่เพื่อเพิ่มงานในวันนั้น</p>
+        </div>
+        <div>
+            <button onclick="navigate('calendar', {month: '${prevMonth}'})" class="btn btn-sm">เดือนก่อน</button>
+            <button onclick="navigate('calendar', {month: '${new Date().toISOString().slice(0,7)}'})" class="btn btn-sm">เดือนนี้</button>
+            <button onclick="navigate('calendar', {month: '${nextMonth}'})" class="btn btn-sm">เดือนถัดไป</button>
+        </div>
+    </div>
+
+    <div class="box calendar-wrap">
+        <div class="calendar">
+            ${['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'].map(dn => `<div class="cal-head">${dn}</div>`).join('')}
+            ${Array(startBlank).fill(0).map(() => `<div class="cal-day empty"></div>`).join('')}
+            ${Array.from({length: daysInMonth}, (_, i) => i + 1).map(day => {
+                const dateStr = `${calendarMonth}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === todayStr;
+                const dayTasks = byDay[day] || [];
+                return `
+                    <div class="cal-day ${isToday ? 'today' : ''}">
+                        <a href="#" onclick="navigate('task_form')" class="cal-num">${day}</a>
+                        ${dayTasks.map(t => `
+                            <a href="#" onclick="navigate('task_form', {id: ${t.id}})" class="cal-task ${t.status === 'done' ? 'done' : ''}" style="--c: ${t.color}" title="${t.title}">
+                                <b>${t.code}</b> ${t.title}
+                            </a>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    </div>`;
+}
+
+function renderSubjects() {
+    const subjects = getSubjects();
+    return `
+    <div class="page-top">
+        <h1>จัดการรายวิชา</h1>
+    </div>
+
+    <div class="two-col">
+        <div class="box">
+            <h2>รายวิชาทั้งหมด</h2>
+            <table>
+                <thead>
+                    <tr><th>รหัสวิชา</th><th>ชื่อวิชา</th><th>สีประจำวิชา</th><th>จัดการ</th></tr>
+                </thead>
+                <tbody>
+                    ${subjects.map(s => `
+                        <tr>
+                            <td><b>${s.code}</b></td>
+                            <td>${s.name}</td>
+                            <td><span class="color-dot" style="background:${s.color}"></span> ${s.color}</td>
+                            <td><button onclick="deleteSubject(${s.id})" class="btn btn-sm btn-danger">ลบ</button></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        <div class="box">
+            <h2>เพิ่มวิชาใหม่</h2>
+            <form onsubmit="saveSubject(event)">
+                <label>รหัสวิชา <input type="text" id="subj-code" placeholder="เช่น ET361" required></label>
+                <label>ชื่อวิชา <input type="text" id="subj-name" placeholder="เช่น การพัฒนาโครงงานคอมพิวเตอร์" required></label>
+                <label>สีประจำวิชา <input type="color" id="subj-color" value="#2F5D50" style="height:40px; cursor:pointer;"></label>
+                <button type="submit" class="btn btn-main btn-full" style="margin-top:10px;">เพิ่มวิชา</button>
+            </form>
+        </div>
+    </div>`;
+}
+
+function saveSubject(e) {
+    e.preventDefault();
+    const subjects = getSubjects();
+    subjects.push({
+        id: Date.now(),
+        code: document.getElementById('subj-code').value,
+        name: document.getElementById('subj-name').value,
+        color: document.getElementById('subj-color').value
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    renderApp();
+}
+
+function deleteSubject(id) {
+    if (confirm('ยืนยันการลบวิชานี้?')) {
+        const subjects = getSubjects().filter(s => s.id != id);
+        localStorage.setItem('subjects', JSON.stringify(subjects));
+        renderApp();
+    }
+}
+
+function renderAuth() {
+    return `
+    <div class="auth-container">
+        <div class="auth-box">
+            <span class="logo">รวมงาน</span>
+            <p class="muted">ทำโดยนิสิต เพื่อนิสิต (Demo Version)</p>
+            <h1 style="margin-top:15px;">เข้าสู่ระบบ</h1>
+            <p class="muted" style="margin-bottom:20px;">เข้าสู่ระบบเพื่อดูงานทุกวิชาของคุณ</p>
+            <form onsubmit="login(event)">
+                <label>อีเมล <input type="email" id="email" value="demo@swu.ac.th" required></label>
+                <label>รหัสผ่าน <input type="password" id="password" value="demo1234" required></label>
+                <button class="btn btn-main btn-full" style="margin-top:10px;">เข้าสู่ระบบ</button>
+            </form>
+        </div>
+        <div class="auth-side">
+            <p>งานทุกวิชา<br>อยู่ในที่เดียว</p>
+        </div>
+    </div>`;
+}
+
+function login(e) {
+    e.preventDefault();
+    const user = { id: 1, name: 'นิสิตตัวอย่าง', email: document.getElementById('email').value };
+    localStorage.setItem('user', JSON.stringify(user));
+    renderApp();
+}
+
+function logout() {
+    localStorage.removeItem('user');
+    renderApp();
+}
+
+// --- Main App Renderer ---
+function renderApp() {
+    const user = getUser();
+    const app = document.getElementById('app');
+
+    if (!user) {
+        app.innerHTML = renderAuth();
+        return;
+    }
+
+    app.innerHTML = renderHeader();
+    const content = document.getElementById('content');
+
+    if (currentView === 'dashboard') content.innerHTML = renderDashboard();
+    else if (currentView === 'tasks') content.innerHTML = renderTasksView();
+    else if (currentView === 'task_form') content.innerHTML = renderTaskForm();
+    else if (currentView === 'calendar') content.innerHTML = renderCalendar();
+    else if (currentView === 'subjects') content.innerHTML = renderSubjects();
+}
+
+// Initial Run
+renderApp();
+</script>
+</body>
+</html>
